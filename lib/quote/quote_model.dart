@@ -3,8 +3,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'quote_model.freezed.dart';
 part 'quote_model.g.dart';
 
-// TODO(Alex): Delete unused data
-
 /// A model class for a quote.
 @freezed
 class Quote with _$Quote {

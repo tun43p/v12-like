@@ -1,8 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:v12_like/core/extensions/theme_extension.dart';
+import 'package:v12_like/core/theme/dark_theme.dart';
 import 'package:v12_like/quote/quote_model.dart';
 import 'package:v12_like/quote/quote_service.dart';
+import 'package:v12_like/widgets/text_field_widget.dart';
 
 void main() {
   runApp(const Main());
@@ -25,16 +28,17 @@ class _MainState extends State<Main> {
 
   late Quote _quote;
 
-  late final List<int> _scores;
+  late final List<Duration> _scores;
   late final TextEditingController _controller;
 
-  final Duration _duration = const Duration(seconds: 1);
+  final Duration _duration = const Duration(milliseconds: 1);
+  final int _maxQuoteLength = 80;
 
   @override
   void initState() {
     super.initState();
 
-    _scores = <int>[];
+    _scores = <Duration>[];
     _controller = TextEditingController();
 
     unawaited(_start());
@@ -42,11 +46,15 @@ class _MainState extends State<Main> {
 
   Future<void> _start() async {
     try {
-      final Quote randomQuote = await QuoteService.getRandomQuote();
+      Quote randomQuote = await QuoteService.getRandomQuote();
+      // Temps que la longueur de la citation est supérieure à 80 caractères
+      while (randomQuote.length > _maxQuoteLength) {
+        randomQuote = await QuoteService.getRandomQuote();
+      }
 
       setState(() {
         _quote = randomQuote;
-        _controller.addListener(_controllerListener);
+        _controller.addListener(_listener);
         _isLoading = false;
       });
     } catch (error, stackTrace) {
@@ -60,10 +68,10 @@ class _MainState extends State<Main> {
     }
   }
 
-  void _controllerListener() {
+  void _listener() {
     if (_timer != null && _controller.text == _quote.content) {
       setState(() {
-        _scores.add(_timer!.tick);
+        _scores.add(Duration(milliseconds: _timer!.tick));
         _timer?.cancel();
       });
     } else if (_controller.text.isNotEmpty &&
@@ -76,10 +84,6 @@ class _MainState extends State<Main> {
     }
   }
 
-  void _debug() {
-    _controller.text = _quote.content;
-  }
-
   Future<void> _restart() async {
     setState(() {
       _isLoading = true;
@@ -89,11 +93,15 @@ class _MainState extends State<Main> {
       _timer = null;
 
       _controller
-        ..removeListener(_controllerListener)
+        ..removeListener(_listener)
         ..clear();
     });
 
     await _start();
+  }
+
+  void _debug() {
+    _controller.text = _quote.content;
   }
 
   @override
@@ -108,10 +116,9 @@ class _MainState extends State<Main> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'V12 Like',
-      theme: ThemeData(),
+      theme: darkTheme,
       home: Scaffold(
         appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           title: const Text('V12 Like'),
         ),
         body: Center(
@@ -124,29 +131,44 @@ class _MainState extends State<Main> {
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: <Widget>[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
-                              ElevatedButton(
-                                onPressed: _debug,
-                                child: const Text('Debug'),
-                              ),
-                              ElevatedButton(
-                                onPressed: _restart,
-                                child: const Text('Restart'),
-                              ),
-                            ],
+                          Text(
+                            Duration(milliseconds: _timer?.tick ?? 0)
+                                .toString(),
+                            style: context.theme.fonts.displayLarge,
                           ),
-                          Text(_timer?.tick.toString() ?? '0'),
-                          Text(_quote.content),
-                          TextField(
-                            controller: _controller,
-                            enabled: _controller.text != _quote.content,
-                            decoration: const InputDecoration(
-                              hintText: 'Enter a quote',
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 32),
+                            child: Text(
+                              _quote.content,
+                              style: context.theme.fonts.displayMedium,
+                              textAlign: TextAlign.center,
                             ),
                           ),
-                          ..._scores.map((int score) => Text(score.toString())),
+                          TextFieldWidget(
+                            controller: _controller,
+                            hint: 'Type fast!',
+                            disabled: _controller.text == _quote.content,
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 32),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                ElevatedButton(
+                                  onPressed: _debug,
+                                  child: const Text('Debug'),
+                                ),
+                                const SizedBox(width: 16),
+                                ElevatedButton(
+                                  onPressed: _restart,
+                                  child: const Text('Restart'),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ..._scores.map(
+                            (Duration score) => Text(score.toString()),
+                          ),
                         ],
                       ),
           ),

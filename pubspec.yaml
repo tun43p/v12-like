@@ -3,7 +3,7 @@ description: "Train yourself to write blazingly fast."
 
 publish_to: "none"
 
-version: 1.0.0+2
+version: 1.0.0+3
 
 environment:
   sdk: ">=3.2.5 <4.0.0"
@@ -26,3 +26,12 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Path: lib/main.dart
+  fonts:
+    - family: AnonymousPro
+      fonts:
+        - asset: assets/fonts/AnonymousPro/AnonymousPro-Bold.ttf
+        - asset: assets/fonts/AnonymousPro/AnonymousPro-BoldItalic.ttf
+        - asset: assets/fonts/AnonymousPro/AnonymousPro-Italic.ttf
+        - asset: assets/fonts/AnonymousPro/AnonymousPro-Regular.ttf
