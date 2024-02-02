@@ -1,1 +1,6 @@
 include: package:blackfoot_flutter_lint/blackfoot_flutter.yaml
+
+analyzer:
+  exclude:
+    - "**/*.freezed.dart"
+    - "**/*.g.dart"
