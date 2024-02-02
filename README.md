@@ -1,4 +1,4 @@
-# v12_like
+# V12 Like
 
 Train yourself to write blazingly fast.
 
@@ -14,3 +14,9 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+## Contributing
+
+Need to generate dart files ?
+
+`dart run build_runner build --delete-conflicting-outputs`

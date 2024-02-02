@@ -1,125 +1,157 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:v12_like/quote/quote_model.dart';
+import 'package:v12_like/quote/quote_service.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const Main());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+/// This is the main application widget.
+class Main extends StatefulWidget {
+  /// This is the constructor for the main application widget.
+  const Main({super.key});
 
-  // This widget is the root of your application.
+  @override
+  State<Main> createState() => _MainState();
+}
+
+class _MainState extends State<Main> {
+  Timer? _timer;
+
+  bool _isError = false;
+  bool _isLoading = true;
+
+  late Quote _quote;
+
+  late final List<int> _scores;
+  late final TextEditingController _controller;
+
+  final Duration _duration = const Duration(seconds: 1);
+
+  @override
+  void initState() {
+    super.initState();
+
+    _scores = <int>[];
+    _controller = TextEditingController();
+
+    unawaited(_start());
+  }
+
+  Future<void> _start() async {
+    try {
+      final Quote randomQuote = await QuoteService.getRandomQuote();
+
+      setState(() {
+        _quote = randomQuote;
+        _controller.addListener(_controllerListener);
+        _isLoading = false;
+      });
+    } catch (error, stackTrace) {
+      setState(() {
+        _isError = true;
+        _isLoading = false;
+      });
+
+      debugPrint(error.toString());
+      debugPrintStack(stackTrace: stackTrace);
+    }
+  }
+
+  void _controllerListener() {
+    if (_timer != null && _controller.text == _quote.content) {
+      setState(() {
+        _scores.add(_timer!.tick);
+        _timer?.cancel();
+      });
+    } else if (_controller.text.isNotEmpty &&
+        (_timer == null || !_timer!.isActive)) {
+      _timer = Timer.periodic(_duration, (Timer timer) {
+        setState(() {
+          _timer = timer;
+        });
+      });
+    }
+  }
+
+  void _debug() {
+    _controller.text = _quote.content;
+  }
+
+  Future<void> _restart() async {
+    setState(() {
+      _isLoading = true;
+      _isError = false;
+
+      _timer?.cancel();
+      _timer = null;
+
+      _controller
+        ..removeListener(_controllerListener)
+        ..clear();
+    });
+
+    await _start();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _controller.dispose();
+
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+      title: 'V12 Like',
+      theme: ThemeData(),
+      home: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+          title: const Text('V12 Like'),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: _isError
+                ? const Text('An error occurred. Please reload the page.')
+                : _isLoading
+                    ? const CircularProgressIndicator()
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                              ElevatedButton(
+                                onPressed: _debug,
+                                child: const Text('Debug'),
+                              ),
+                              ElevatedButton(
+                                onPressed: _restart,
+                                child: const Text('Restart'),
+                              ),
+                            ],
+                          ),
+                          Text(_timer?.tick.toString() ?? '0'),
+                          Text(_quote.content),
+                          TextField(
+                            controller: _controller,
+                            enabled: _controller.text != _quote.content,
+                            decoration: const InputDecoration(
+                              hintText: 'Enter a quote',
+                            ),
+                          ),
+                          ..._scores.map((int score) => Text(score.toString())),
+                        ],
+                      ),
+          ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
